@@ -1,0 +1,90 @@
+{% comment %}
+  Section: main-collection-product-grid-variants
+  Displays each product color as its own card (uses card-product snippet).
+  NOTE: Assumes Option2 is "Color" (based on your CSV).
+{% endcomment %}
+
+<section class="collection page-width">
+  <div class="collection__header">
+
+    {% unless collection.handle == 'all' %}
+        <h1 class="collection__title">{{ collection.title }}</h1>
+        {% if collection.description != blank %}
+        <div class="collection__description rte">{{ collection.description }}</div>
+        {% endif %}
+    {% endunless %}
+
+  </div>
+
+  <div class="collection-controls page-width">
+  <!-- Filter by -->
+  <div class="filter-by">
+    <label for="filter">Filter by:</label>
+    <select id="filter" onchange="if(this.value) window.location=this.value;">
+      <option value="">All products</option>
+      <option value="/collections/{{ collection.handle }}/color-white">Color White</option>
+      <option value="/collections/{{ collection.handle }}/color-red">Color Red</option>
+      <option value="/collections/{{ collection.handle }}/color-blue">Color Blue</option>
+      <option value="/collections/{{ collection.handle }}/size-xs">Size XS</option>
+      <option value="/collections/{{ collection.handle }}/size-s">Size S</option>
+      <option value="/collections/{{ collection.handle }}/size-m">Size M</option>
+      <option value="/collections/{{ collection.handle }}/size-l">Size L</option>
+    </select>
+  </div>
+
+  <!-- Sort by -->
+  <div class="sort-by">
+    <label for="sort">Sort by:</label>
+    <select id="sort" onchange="location = this.value;">
+      <option value="?sort_by=best-selling">Best selling</option>
+      <option value="?sort_by=price-ascending">Price, low to high</option>
+      <option value="?sort_by=price-descending">Price, high to low</option>
+      <option value="?sort_by=title-ascending">Alphabetically, A-Z</option>
+      <option value="?sort_by=title-descending">Alphabetically, Z-A</option>
+      <option value="?sort_by=created-descending">Date, new to old</option>
+      <option value="?sort_by=created-ascending">Date, old to new</option>
+    </select>
+  </div>
+</div>
+
+  
+
+  {% paginate collection.products by 24 %}
+    <!-- Responsive grid: 2 columns on mobile, 3 on tablet, 4 on desktop -->
+    <div class="grid grid--2-col grid--3-col-tablet grid--4-col-desktop product-grid">
+      {%- for product in collection.products -%}
+        {%- assign shown_colors = "" -%}
+        {%- for variant in product.variants -%}
+          {%- assign color = variant.option2 | default: variant.option1 -%}
+          {%- if shown_colors contains color -%}
+            {%- continue -%}
+          {%- endif -%}
+
+          {%- assign shown_colors = shown_colors | append: color | append: "," -%}
+          <div class="grid__item">
+            {%- render 'card-product',
+                card_product: product,
+                card_variant: variant,
+                section_id: section.id
+            -%}
+          </div>
+        {%- endfor -%}
+      {%- endfor -%}
+    </div>
+
+    {%- render 'pagination', paginate: paginate -%}
+  {% endpaginate %}
+</section>
+
+{% schema %}
+{
+  "name": "Collection—Variants",
+  "settings": [],
+  "presets": [
+    {
+      "name": "Collection—Variants",
+      "category": "Collections"
+    }
+  ]
+}
+{% endschema %}

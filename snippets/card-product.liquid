@@ -1,0 +1,133 @@
+{% comment %}
+  Variant-aware product card.
+  Accepts:
+  - card_product: Product object (default for normal collections)
+  - card_variant: Variant object (when called from variant-collection)
+  - section_id: optional (for accessibility IDs)
+{% endcomment %}
+
+{%- unless skip_styles -%}
+  {{ 'component-rating.css' | asset_url | stylesheet_tag }}
+  {{ 'component-volume-pricing.css' | asset_url | stylesheet_tag }}
+  {{ 'component-price.css' | asset_url | stylesheet_tag }}
+  {{ 'quick-order-list.css' | asset_url | stylesheet_tag }}
+  {{ 'quantity-popover.css' | asset_url | stylesheet_tag }}
+{%- endunless -%}
+
+{%- comment -%}
+  Figure out display objects:
+  - display_product: product used for fallbacks (title, url, vendor, product-level price rendering)
+  - display_variant: if card_variant provided, use that
+{%- endcomment -%}
+{%- assign display_product = card_product | default: product -%}
+{%- assign display_variant = card_variant -%}
+{%- if display_variant and display_variant != blank -%}
+  {%- assign display_product = display_variant.product -%}
+{%- endif -%}
+
+{%- if display_product and display_product != blank -%}
+  {%- liquid
+    assign ratio = 1
+    if display_product.featured_media and media_aspect_ratio == 'portrait'
+      assign ratio = 0.8
+    elsif display_product.featured_media and media_aspect_ratio == 'adapt'
+      assign ratio = display_product.featured_media.aspect_ratio
+    endif
+    if ratio == 0 or ratio == null
+      assign ratio = 1
+    endif
+  -%}
+
+  <div class="card-wrapper product-card-wrapper underline-links-hover">
+    <div class="card card--{{ settings.card_style }} {% if display_product.featured_media %} card--media{% else %} card--text{% endif %} {% if settings.card_style == 'card' %} color-{{ settings.card_color_scheme }} gradient{% endif %}">
+      <div class="card__inner {% if display_product.featured_media or settings.card_style == 'standard' %}ratio{% endif %}">
+
+        {%- comment -%} IMAGE (try variant.media -> variant.featured_image -> product.featured_media) {%- endcomment -%}
+        <div class="card__media">
+          {%- if display_variant and display_variant.featured_media -%}
+            {{ display_variant.featured_media | image_url: width: 533 | image_tag:
+                class: 'motion-reduce',
+                widths: '165, 360, 533, 720, 940, 1066',
+                sizes: '(min-width: 1200px) 25vw, (min-width: 750px) 33vw, 50vw',
+                alt: display_variant.featured_media.alt | escape }}
+          {%- elsif display_variant and display_variant.featured_image -%}
+            {{ display_variant.featured_image | image_url: width: 533 | image_tag:
+                class: 'motion-reduce',
+                widths: '165, 360, 533, 720, 940, 1066',
+                sizes: '(min-width: 1200px) 25vw, (min-width: 750px) 33vw, 50vw',
+                alt: display_variant.featured_image.alt | escape }}
+          {%- elsif display_product.featured_media -%}
+            {{ display_product.featured_media | image_url: width: 533 | image_tag:
+                class: 'motion-reduce',
+                widths: '165, 360, 533, 720, 940, 1066',
+                sizes: '(min-width: 1200px) 25vw, (min-width: 750px) 33vw, 50vw',
+                alt: display_product.featured_media.alt | escape }}
+          {%- else -%}
+            {{ 'product-apparel-2' | placeholder_svg_tag: 'placeholder-svg' }}
+          {%- endif -%}
+        </div>
+
+        <div class="card__content">
+          <div class="card__information">
+            <h3 class="card__heading {% if display_product.featured_media or settings.card_style == 'card' %}h5{% endif %}">
+              <a href="{% if display_variant %}{{ display_product.url }}?variant={{ display_variant.id }}{% else %}{{ display_product.url }}{% endif %}" class="full-unstyled-link">
+                {{ display_product.title | escape }}
+                {%- if display_variant and display_variant.title and display_variant.title != 'Default Title' -%}
+                  – {{ display_variant.title | escape }}
+                {%- endif -%}
+              </a>
+            </h3>
+
+            <div class="card-information">
+              {%- if show_vendor -%}
+                <span class="visually-hidden">{{ 'accessibility.vendor' | t }}</span>
+                <div class="caption-with-letter-spacing light">{{ display_product.vendor }}</div>
+              {%- endif -%}
+
+              {%- comment -%} Price: variant price if available, else product price snippet {%- endcomment -%}
+              {%- if display_variant -%}
+                <div class="price">
+                  {{ display_variant.price | money }}
+                  {%- if display_variant.compare_at_price > display_variant.price -%}
+                    <span class="price--compare">{{ display_variant.compare_at_price | money }}</span>
+                  {%- endif -%}
+                </div>
+              {%- else -%}
+                {%- render 'price', product: display_product, price_class: '', show_compare_at_price: true -%}
+              {%- endif -%}
+            </div>
+          </div>
+        </div>
+
+        {%- comment -%} badges (sold out / on sale) - prefer variant state when present {%- endcomment -%}
+        <div class="card__badge">
+          {%- if display_variant and display_variant.available == false -%}
+            <span class="badge badge--bottom-left color-{{ settings.sold_out_badge_color_scheme }}">{{ 'products.product.sold_out' | t }}</span>
+          {%- elsif display_variant and display_variant.compare_at_price > display_variant.price and display_variant.available -%}
+            <span class="badge badge--bottom-left color-{{ settings.sale_badge_color_scheme }}">{{ 'products.product.on_sale' | t }}</span>
+          {%- elsif display_product.available == false -%}
+            <span class="badge badge--bottom-left color-{{ settings.sold_out_badge_color_scheme }}">{{ 'products.product.sold_out' | t }}</span>
+          {%- elsif display_product.compare_at_price > display_product.price and display_product.available -%}
+            <span class="badge badge--bottom-left color-{{ settings.sale_badge_color_scheme }}">{{ 'products.product.on_sale' | t }}</span>
+          {%- endif -%}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+{%- else -%}
+  <div class="card-wrapper product-card-wrapper">
+    <div class="card">
+      <div class="card__media">
+        {{ 'product-apparel-2' | placeholder_svg_tag: 'placeholder-svg' }}
+      </div>
+      <div class="card__content">
+        <div class="card__information">
+          <h3 class="card__heading card__heading--placeholder h5"><a role="link" aria-disabled="true" class="full-unstyled-link">{{ 'onboarding.product_title' | t }}</a></h3>
+          {%- render 'price', placeholder: true, show_compare_at_price: true -%}
+        </div>
+      </div>
+    </div>
+  </div>
+{%- endif -%}

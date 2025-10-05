@@ -1,0 +1,43 @@
+{% comment %}
+  Section: main-collection-product-grid-variants
+  Displays each product color as its own card (uses card-product snippet).
+  NOTE: Assumes Option2 is "Color" (based on your CSV).
+{% endcomment %}
+
+<section class="collection page-width">
+  <div class="collection__header">
+    <h1 class="collection__title">{{ collection.title }}</h1>
+    {% if collection.description != blank %}
+      <div class="collection__description rte">{{ collection.description }}</div>
+    {% endif %}
+  </div>
+
+  {% paginate collection.products by 24 %}
+    <!-- Responsive grid: 2 columns on mobile, 3 on tablet, 4 on desktop -->
+    <div class="grid grid--2-col grid--3-col-tablet grid--4-col-desktop product-grid">
+      {%- for product in collection.products -%}
+          <div class="grid__item">
+            {%- render 'card-product',
+                card_product: product,
+                section_id: section.id
+            -%}
+          </div>
+      {%- endfor -%}
+    </div>
+
+    {%- render 'pagination', paginate: paginate -%}
+  {% endpaginate %}
+</section>
+
+{% schema %}
+{
+  "name": "Collection—Variants",
+  "settings": [],
+  "presets": [
+    {
+      "name": "Collection—Variants",
+      "category": "Collections"
+    }
+  ]
+}
+{% endschema %}
